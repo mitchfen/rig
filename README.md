@@ -3,6 +3,12 @@
 A lightweight, CLI harness for interacting with local LLMs hosted in LM Studio.  
 Built for personal use in my homelab workflows, it provides local models with safe, controlled access to your files and terminal tools.
 
+---
+
+<img src="./screenshot.png"/>
+
+---
+
 ## Features
 
 - Tools:
