@@ -8,12 +8,13 @@ import (
 
 // Config defines settings for rig.
 type Config struct {
-	Endpoint           string `json:"endpoint"`
-	Model              string `json:"model"`
-	MaxContextTokens   int    `json:"max_context_tokens"`
-	MaxSteps           int    `json:"max_steps"`
-	InstructionsFile   string `json:"instructions_file"`
-	MaxToolOutputChars int    `json:"max_tool_output_chars"`
+	Endpoint           string   `json:"endpoint"`
+	Model              string   `json:"model"`
+	MaxContextTokens   int      `json:"max_context_tokens"`
+	MaxSteps           int      `json:"max_steps"`
+	InstructionsFile   string   `json:"instructions_file"`
+	ContextFiles       []string `json:"context_files"`
+	MaxToolOutputChars int      `json:"max_tool_output_chars"`
 }
 
 // Default returns sensible baseline settings.
@@ -24,6 +25,7 @@ func Default() Config {
 		MaxContextTokens:   16384,
 		MaxSteps:           10,
 		InstructionsFile:   "instructions.md",
+		ContextFiles:       []string{},
 		MaxToolOutputChars: 3000,
 	}
 }

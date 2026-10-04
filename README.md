@@ -24,11 +24,17 @@ Settings can be customized directly in [config/config.json](file:///home/mitchfe
   "endpoint": "http://127.0.0.1:1234/v1",
   "model": "",
   "instructions_file": "instructions.md",
-  "max_context_tokens": 131072,
+  "context_files": [
+    "~/Projects/homelab/README.md"
+  ],
+  "max_context_tokens": 16384,
   "max_steps": 10,
   "max_tool_output_chars": 3000
 }
 ```
+
+- `context_files`: Array of markdown files (supporting `~/` expansion or paths relative to `config/`) automatically pre-loaded into the agent's memory on startup.
+- `instructions_file`: Base persona, tone, and operational guidelines.
 
 ### Custom Instructions (`instructions.md`)
 You can define homelab rules, preferred tools, and communication style in [config/instructions.md](file:///home/mitchfen/Projects/rig/config/instructions.md). These are automatically injected into the agent's prompt on startup.
@@ -48,8 +54,7 @@ This compiles the binary and packages a self-contained distribution folder in `o
 
 ### 2. Run
 ```bash
-cd output
-./rig
+./output/rig
 ```
 
 ### REPL Commands

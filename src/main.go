@@ -94,6 +94,12 @@ func main() {
 		lipgloss.NewStyle().Bold(true).Render("Context:"), lipgloss.NewStyle().Foreground(ui.PrimaryColor).Render(fmt.Sprintf("%d tokens", cfg.MaxContextTokens)),
 		lipgloss.NewStyle().Bold(true).Render("Endpoint:"), lipgloss.NewStyle().Foreground(ui.MutedColor).Render(cfg.Endpoint),
 	)
+	if len(cfg.ContextFiles) > 0 {
+		bannerText += fmt.Sprintf("\n%s %s",
+			lipgloss.NewStyle().Bold(true).Render("Context:"),
+			lipgloss.NewStyle().Foreground(ui.MutedColor).Render(strings.Join(cfg.ContextFiles, ", ")),
+		)
+	}
 	fmt.Println(ui.BannerBox.Render(bannerText))
 	fmt.Printf("%s /context (usage), /reset (clear history), /exit\n\n", ui.ThinkingStyle.Render("Commands:"))
 

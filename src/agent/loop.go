@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"path/filepath"
+
 	"rig/src/client"
 	"rig/src/config"
 	"rig/src/tools"
@@ -47,6 +49,19 @@ Key Directives:
 		}
 		if err == nil && len(strings.TrimSpace(string(content))) > 0 {
 			basePrompt += "\n\nAdditional Instructions:\n" + string(content)
+		}
+	}
+
+	// Load additional context files specified in config (e.g. ~/Projects/homelab/README.md)
+	for _, rawPath := range cfg.ContextFiles {
+		resolvedPath := resolvePath(rawPath)
+		content, err := os.ReadFile(resolvedPath)
+		if err != nil && os.IsNotExist(err) {
+			// Also check config/ subdirectory
+			content, err = os.ReadFile(filepath.Join("config", resolvedPath))
+		}
+		if err == nil && len(strings.TrimSpace(string(content))) > 0 {
+			basePrompt += fmt.Sprintf("\n\n=== PRE-LOADED BACKGROUND CONTEXT: %s ===\n%s\n=== END OF %s ===", rawPath, strings.TrimSpace(string(content)), rawPath)
 		}
 	}
 
@@ -222,4 +237,14 @@ func (a *Agent) confirmExecution(name, args string) bool {
 	}
 	input := strings.TrimSpace(strings.ToLower(a.scanner.Text()))
 	return input == "" || input == "y" || input == "yes"
+}
+
+// resolvePath expands ~ to the user's home directory.
+func resolvePath(p string) string {
+	if strings.HasPrefix(p, "~/") {
+		if home, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(home, p[2:])
+		}
+	}
+	return p
 }

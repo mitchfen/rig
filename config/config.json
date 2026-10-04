@@ -4,5 +4,8 @@
   "max_context_tokens": 16384,
   "max_steps": 10,
   "instructions_file": "instructions.md",
+  "context_files": [
+    "~/Projects/homelab/README.md"
+  ],
   "max_tool_output_chars": 3000
 }
