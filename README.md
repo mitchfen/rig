@@ -1,6 +1,6 @@
 # Rig
 
-A lightweight, zero-dependency CLI harness for interacting with local LLMs hosted in LM Studio.  
+A lightweight, CLI harness for interacting with local LLMs hosted in LM Studio.  
 Built for personal use in my homelab workflows, it provides local models with safe, controlled access to your files and terminal tools.
 
 ## Features
@@ -14,11 +14,11 @@ Built for personal use in my homelab workflows, it provides local models with sa
     - Prompts for confirmation before running.
 - Interactive REPL or One-Shot: Use as an interactive terminal assistant or a direct task runner.
 - Automatically detects the model currently loaded in LM Studio.
-- Pure Go: Compiles to a single zero-dependency native binary.
+- Pure Go: Compiles to a single native binary.
 
 ## Configuration
 
-Settings can be customized directly in [config.json](file:///home/mitchfen/Projects/rig/config.json):
+Settings can be customized directly in [config/config.json](file:///home/mitchfen/Projects/rig/config/config.json):
 ```json
 {
   "endpoint": "http://127.0.0.1:1234/v1",
@@ -31,7 +31,7 @@ Settings can be customized directly in [config.json](file:///home/mitchfen/Proje
 ```
 
 ### Custom Instructions (`instructions.md`)
-You can define homelab rules, preferred tools, and communication style in [RIG.md](./instructions.md). These are automatically injected into the agent's prompt on startup.
+You can define homelab rules, preferred tools, and communication style in [config/instructions.md](file:///home/mitchfen/Projects/rig/config/instructions.md). These are automatically injected into the agent's prompt on startup.
 
 ---
 

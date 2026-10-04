@@ -8,10 +8,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"rig/src/agent"
 	"rig/src/client"
 	"rig/src/config"
 	"rig/src/tools"
+	"rig/src/ui"
 )
 
 func main() {
@@ -25,7 +27,7 @@ func main() {
 	// Load configuration file
 	cfg, err := config.Load(*configPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%sWarning loading config file:%s %v (using defaults)\n", agent.ColorYellow, agent.ColorReset, err)
+		fmt.Println(ui.PromptWarning.Render(fmt.Sprintf("Warning loading config file: %v (using defaults)", err)))
 		cfg = config.Default()
 	}
 
@@ -47,16 +49,18 @@ func main() {
 	llmClient := client.New(cfg.Endpoint)
 
 	// Fetch available models from LM Studio
-	fmt.Printf("%s[rig]%s Connecting to LM Studio at %s...\n", agent.ColorBold+agent.ColorCyan, agent.ColorReset, cfg.Endpoint)
+	fmt.Print(ui.ThinkingStyle.Render(fmt.Sprintf("Connecting to LM Studio at %s...", cfg.Endpoint)) + "\r")
 	availableModels, err := llmClient.ListModels(ctx)
+	fmt.Print("\r\033[K")
+
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%sError connecting to LM Studio:%s %v\n", agent.ColorRed, agent.ColorReset, err)
-		fmt.Fprintf(os.Stderr, "Make sure LM Studio is running, local server is started, and listening at %s\n", cfg.Endpoint)
+		fmt.Println(ui.ErrorStyle.Render(fmt.Sprintf("Error connecting to LM Studio: %v", err)))
+		fmt.Printf("Make sure LM Studio is running, local server is started, and listening at %s\n", cfg.Endpoint)
 		os.Exit(1)
 	}
 
 	if len(availableModels) == 0 {
-		fmt.Fprintf(os.Stderr, "%sNo models currently loaded in LM Studio! Please load a model in LM Studio first.%s\n", agent.ColorRed, agent.ColorReset)
+		fmt.Println(ui.ErrorStyle.Render("No models currently loaded in LM Studio! Please load a model in LM Studio first."))
 		os.Exit(1)
 	}
 
@@ -82,26 +86,23 @@ func main() {
 		}
 	}
 
-	fmt.Printf("%s[rig]%s Using model: %s%s%s (Context limit: %d tokens)\n",
-		agent.ColorBold+agent.ColorCyan,
-		agent.ColorReset,
-		agent.ColorGreen+agent.ColorBold,
-		selectedModel,
-		agent.ColorReset,
-		cfg.MaxContextTokens,
+	// Styled Startup Banner
+	bannerText := fmt.Sprintf("%s  %s\n\n%s %s\n%s %s\n%s %s",
+		ui.Badge.Render("RIG"),
+		lipgloss.NewStyle().Foreground(ui.MutedColor).Render("Local Homelab Coding Harness"),
+		lipgloss.NewStyle().Bold(true).Render("Model:"), ui.ModelBadge.Render(selectedModel),
+		lipgloss.NewStyle().Bold(true).Render("Context:"), lipgloss.NewStyle().Foreground(ui.PrimaryColor).Render(fmt.Sprintf("%d tokens", cfg.MaxContextTokens)),
+		lipgloss.NewStyle().Bold(true).Render("Endpoint:"), lipgloss.NewStyle().Foreground(ui.MutedColor).Render(cfg.Endpoint),
 	)
+	fmt.Println(ui.BannerBox.Render(bannerText))
+	fmt.Printf("%s /context (usage), /reset (clear history), /exit\n\n", ui.ThinkingStyle.Render("Commands:"))
 
 	registry := tools.NewRegistry(cfg.MaxToolOutputChars)
 	bot := agent.New(llmClient, selectedModel, registry, cfg)
 
-	// Interactive REPL Mode
-	fmt.Printf("\n%s=== rig Interactive Coding Harness ===%s\n", agent.ColorBold+agent.ColorGreen, agent.ColorReset)
-	fmt.Printf("Commands: %s/reset%s (clear context), %s/context%s (token usage), %s/exit%s\n\n",
-		agent.ColorYellow, agent.ColorReset, agent.ColorYellow, agent.ColorReset, agent.ColorYellow, agent.ColorReset)
-
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
-		fmt.Printf("%srig > %s", agent.ColorBold+agent.ColorCyan, agent.ColorReset)
+		fmt.Print(ui.PromptPrefix)
 		if !scanner.Scan() {
 			break
 		}
@@ -111,25 +112,25 @@ func main() {
 			continue
 		}
 
-		// REPL control commands
 		switch input {
 		case "/exit", "quit", "exit":
-			fmt.Println("Goodbye!")
+			fmt.Println(lipgloss.NewStyle().Foreground(ui.MutedColor).Render("Goodbye!"))
 			return
 		case "/reset", "/clear":
 			bot.Reset()
-			fmt.Printf("%s[Conversation reset. Context cleared back to system prompt]%s\n\n", agent.ColorGreen, agent.ColorReset)
+			fmt.Println(lipgloss.NewStyle().Foreground(ui.SecondaryColor).Render("✓ Conversation reset. Context cleared back to system prompt.\n"))
 			continue
 		case "/context":
 			usedTokens := bot.EstimateTokens()
 			pct := float64(usedTokens) / float64(cfg.MaxContextTokens) * 100
-			fmt.Printf("%s[Context Usage: ~%d / %d tokens (%.1f%%) across %d messages]%s\n\n",
-				agent.ColorCyan, usedTokens, cfg.MaxContextTokens, pct, len(bot.Messages), agent.ColorReset)
+			contextCard := fmt.Sprintf("Context Usage: ~%d / %d tokens (%.1f%%) across %d messages",
+				usedTokens, cfg.MaxContextTokens, pct, len(bot.Messages))
+			fmt.Println(lipgloss.NewStyle().Foreground(ui.PrimaryColor).Bold(true).Render(contextCard) + "\n")
 			continue
 		}
 
 		if err := bot.RunTurn(ctx, input); err != nil {
-			fmt.Printf("%sTurn error:%s %v\n", agent.ColorRed, agent.ColorReset, err)
+			fmt.Println(ui.ErrorStyle.Render(fmt.Sprintf("Turn error: %v", err)))
 		}
 		fmt.Println()
 	}

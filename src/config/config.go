@@ -33,9 +33,14 @@ func Load(path string) (Config, error) {
 	cfg := Default()
 
 	data, err := os.ReadFile(path)
+	if err != nil && os.IsNotExist(err) && path == "config.json" {
+		// Fallback check in config/ subdirectory
+		data, err = os.ReadFile("config/config.json")
+	}
+
 	if err != nil {
 		if os.IsNotExist(err) {
-			return cfg, nil // Not an error if config.json doesn't exist yet
+			return cfg, nil // Not an error if config doesn't exist yet
 		}
 		return cfg, fmt.Errorf("failed to read config file '%s': %w", path, err)
 	}

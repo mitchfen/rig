@@ -10,18 +10,7 @@ import (
 	"rig/src/client"
 	"rig/src/config"
 	"rig/src/tools"
-)
-
-// ANSI color escape codes for clean terminal output
-const (
-	ColorReset   = "\033[0m"
-	ColorBold    = "\033[1m"
-	ColorDim     = "\033[2m"
-	ColorCyan    = "\033[36m"
-	ColorGreen   = "\033[32m"
-	ColorYellow  = "\033[33m"
-	ColorRed     = "\033[31m"
-	ColorMagenta = "\033[35m"
+	"rig/src/ui"
 )
 
 type Agent struct {
@@ -50,9 +39,13 @@ Key Directives:
 2. Execute only the minimal required commands to answer the user's question.
 3. For status queries (e.g. Kubernetes, Docker, system), provide summary commands first; do not exhaustively troubleshoot or inspect individual components unless explicitly asked.`
 
-	// Check for custom instructions file (e.g. RIG.md)
+	// Check for custom instructions file (e.g. instructions.md or config/instructions.md)
 	if cfg.InstructionsFile != "" {
-		if content, err := os.ReadFile(cfg.InstructionsFile); err == nil && len(strings.TrimSpace(string(content))) > 0 {
+		content, err := os.ReadFile(cfg.InstructionsFile)
+		if err != nil && os.IsNotExist(err) {
+			content, err = os.ReadFile("config/" + cfg.InstructionsFile)
+		}
+		if err == nil && len(strings.TrimSpace(string(content))) > 0 {
 			basePrompt += "\n\nAdditional Instructions:\n" + string(content)
 		}
 	}
@@ -76,7 +69,7 @@ func (a *Agent) Reset() {
 	}
 }
 
-// EstimateTokens calculates an approximate token count (~4 characters per token).
+// EstimateTokens calculates approximate token count (~4 characters per token).
 func (a *Agent) EstimateTokens() int {
 	totalChars := 0
 	for _, m := range a.Messages {
@@ -109,13 +102,12 @@ func (a *Agent) PruneContext() {
 
 	// If still too large, drop oldest turns (preserve system prompt at index 0)
 	for a.EstimateTokens() > limit && len(a.Messages) > 4 {
-		// Drop message at index 1
 		a.Messages = append(a.Messages[:1], a.Messages[2:]...)
 		pruned++
 	}
 
 	if pruned > 0 {
-		fmt.Printf("%s[Notice: Pruned older conversation context to fit %d token limit]%s\n", ColorDim, a.Config.MaxContextTokens, ColorReset)
+		fmt.Println(ui.ThinkingStyle.Render(fmt.Sprintf("[Notice: Pruned older context to fit %d token limit]", a.Config.MaxContextTokens)))
 	}
 }
 
@@ -127,7 +119,6 @@ func (a *Agent) RunTurn(ctx context.Context, userInput string) error {
 	})
 
 	for step := 0; step < a.Config.MaxSteps; step++ {
-		// Check context limit and prune if needed before calling model
 		a.PruneContext()
 
 		req := client.ChatRequest{
@@ -137,10 +128,9 @@ func (a *Agent) RunTurn(ctx context.Context, userInput string) error {
 			Temperature: 0.2,
 		}
 
-		fmt.Printf("%sThinking...%s\r", ColorDim, ColorReset)
+		fmt.Print(ui.ThinkingStyle.Render("Thinking...") + "\r")
 		respMsg, err := a.Client.Chat(ctx, req)
-		// Clear thinking indicator
-		fmt.Print("\r\033[K")
+		fmt.Print("\r\033[K") // clear thinking text
 
 		if err != nil {
 			return fmt.Errorf("model error: %w", err)
@@ -148,9 +138,10 @@ func (a *Agent) RunTurn(ctx context.Context, userInput string) error {
 
 		a.Messages = append(a.Messages, *respMsg)
 
-		// Print any text response from the model
+		// Render model text as formatted markdown using Glamour
 		if strings.TrimSpace(respMsg.Content) != "" {
-			fmt.Printf("\n%s%s%s\n", ColorCyan, respMsg.Content, ColorReset)
+			renderedMarkdown := ui.RenderMarkdown(respMsg.Content)
+			fmt.Println(renderedMarkdown)
 		}
 
 		// If no tools were called, the turn is finished
@@ -166,7 +157,7 @@ func (a *Agent) RunTurn(ctx context.Context, userInput string) error {
 			tool, exists := a.Registry.Get(toolName)
 			if !exists {
 				errMsg := fmt.Sprintf("Error: Unknown tool '%s'", toolName)
-				fmt.Printf("%s[Tool Error: %s]%s\n", ColorRed, errMsg, ColorReset)
+				fmt.Println(ui.ErrorStyle.Render(errMsg))
 				a.Messages = append(a.Messages, client.Message{
 					Role:       "tool",
 					ToolCallID: tc.ID,
@@ -176,15 +167,14 @@ func (a *Agent) RunTurn(ctx context.Context, userInput string) error {
 				continue
 			}
 
-			// Show tool action banner
-			fmt.Printf("\n%s⚙ Tool Call:%s %s%s%s\n", ColorYellow+ColorBold, ColorReset, ColorMagenta, toolName, ColorReset)
-			fmt.Printf("%sArgs:%s %s\n", ColorDim, ColorReset, toolArgs)
+			// Render tool call card with Lip Gloss
+			fmt.Println(ui.RenderToolCall(toolName, toolArgs))
 
 			// Permission confirmation for destructive actions (always required)
 			if tool.IsDestructive() {
 				if !a.confirmExecution(toolName, toolArgs) {
 					userDeniedMsg := "Tool execution cancelled by user."
-					fmt.Printf("%s[Cancelled]%s\n", ColorRed, ColorReset)
+					fmt.Println(ui.ErrorStyle.Render("[Execution Cancelled by User]"))
 					a.Messages = append(a.Messages, client.Message{
 						Role:       "tool",
 						ToolCallID: tc.ID,
@@ -201,19 +191,15 @@ func (a *Agent) RunTurn(ctx context.Context, userInput string) error {
 				output = fmt.Sprintf("Tool error: %v", execErr)
 			}
 
-			// Enforce max output characters limit to protect context
+			// Enforce max output characters limit
 			maxChars := a.Registry.MaxOutputChars()
 			if maxChars > 0 && len(output) > maxChars {
 				output = fmt.Sprintf("%s\n\n... [Output truncated: %d chars exceeded max limit of %d. Use specific filters/flags if more details needed.]",
 					output[:maxChars], len(output), maxChars)
 			}
 
-			// Print preview of output
-			preview := output
-			if len(preview) > 300 {
-				preview = preview[:300] + "... (truncated)"
-			}
-			fmt.Printf("%sResult:%s %s\n", ColorGreen, ColorReset, preview)
+			// Render tool result preview with Lip Gloss
+			fmt.Println(ui.RenderToolResult(output))
 
 			a.Messages = append(a.Messages, client.Message{
 				Role:       "tool",
@@ -224,12 +210,13 @@ func (a *Agent) RunTurn(ctx context.Context, userInput string) error {
 		}
 	}
 
-	fmt.Printf("\n%s[Warning: reached maximum tool turn limit (%d)]%s\n", ColorYellow, a.Config.MaxSteps, ColorReset)
+	fmt.Println(ui.PromptWarning.Render(fmt.Sprintf("[Warning: reached maximum tool turn limit (%d)]", a.Config.MaxSteps)))
 	return nil
 }
 
 func (a *Agent) confirmExecution(name, args string) bool {
-	fmt.Printf("%sAllow execution of %s%s? [Y/n]: ", ColorYellow+ColorBold, name, ColorReset)
+	prompt := fmt.Sprintf("⚡ Confirm execution of %s? [Y/n]: ", name)
+	fmt.Print(ui.PromptWarning.Render(prompt))
 	if !a.scanner.Scan() {
 		return false
 	}
