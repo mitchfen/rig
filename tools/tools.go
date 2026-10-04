@@ -24,18 +24,27 @@ type Tool interface {
 
 // Registry manages all available tools.
 type Registry struct {
-	tools map[string]Tool
+	tools          map[string]Tool
+	maxOutputChars int
 }
 
-func NewRegistry() *Registry {
+func NewRegistry(maxOutputChars int) *Registry {
+	if maxOutputChars <= 0 {
+		maxOutputChars = 3000
+	}
 	r := &Registry{
-		tools: make(map[string]Tool),
+		tools:          make(map[string]Tool),
+		maxOutputChars: maxOutputChars,
 	}
 	r.Register(&ReadFileTool{})
 	r.Register(&WriteFileTool{})
 	r.Register(&ListDirTool{})
 	r.Register(&RunCommandTool{})
 	return r
+}
+
+func (r *Registry) MaxOutputChars() int {
+	return r.maxOutputChars
 }
 
 func (r *Registry) Register(t Tool) {

@@ -1,0 +1,8 @@
+{
+  "endpoint": "http://127.0.0.1:1234/v1",
+  "model": "",
+  "max_context_tokens": 16384,
+  "max_steps": 10,
+  "instructions_file": "RIG.md",
+  "max_tool_output_chars": 3000
+}

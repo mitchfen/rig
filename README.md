@@ -16,6 +16,23 @@ Built for personal use in my homelab workflows, it provides local models with sa
 - Automatically detects the model currently loaded in LM Studio.
 - Pure Go: Compiles to a single zero-dependency native binary.
 
+## Configuration
+
+Settings can be customized directly in [config.json](file:///home/mitchfen/Projects/rig/config.json):
+```json
+{
+  "endpoint": "http://127.0.0.1:1234/v1",
+  "model": "",
+  "instructions_file": "instructions.md",
+  "max_context_tokens": 131072,
+  "max_steps": 10,
+  "max_tool_output_chars": 3000
+}
+```
+
+### Custom Instructions (`instructions.md`)
+You can define homelab rules, preferred tools, and communication style in [RIG.md](./instructions.md). These are automatically injected into the agent's prompt on startup.
+
 ---
 
 ## Usage
@@ -25,11 +42,12 @@ Built for personal use in my homelab workflows, it provides local models with sa
 go build -o rig main.go
 ```
 
-### 2. Run
+### 2. Run in REPL mode
 ```bash
 ./rig
 ```
-*Options:*
-- `./rig -y`: Run in autonomous mode (auto-approve all tool executions).
-- `./rig -model qwen/qwen3.8-27b`: Override model selection.
-- `./rig -url http://127.0.0.1:1234/v1`: Custom LM Studio address.
+
+### REPL Commands
+- `/context`: Displays token usage and percentage of your context limit.
+- `/reset` or `/clear`: Resets conversation history back to initial prompt.
+- `/exit` or `quit`: Exit the REPL.
