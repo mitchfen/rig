@@ -3,6 +3,6 @@
   "model": "",
   "max_context_tokens": 16384,
   "max_steps": 10,
-  "instructions_file": "RIG.md",
+  "instructions_file": "instructions.md",
   "max_tool_output_chars": 3000
 }

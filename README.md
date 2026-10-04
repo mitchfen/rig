@@ -39,11 +39,16 @@ You can define homelab rules, preferred tools, and communication style in [RIG.m
 
 ### 1. Build
 ```bash
-go build -o rig main.go
+./build.sh
 ```
+This compiles the binary and packages a self-contained distribution folder in `output/`:
+- `output/rig`: Executable binary
+- `output/config.json`: Configuration file
+- `output/instructions.md`: Custom instructions
 
-### 2. Run in REPL mode
+### 2. Run
 ```bash
+cd output
 ./rig
 ```
 

@@ -23,7 +23,7 @@ func Default() Config {
 		Model:              "",
 		MaxContextTokens:   16384,
 		MaxSteps:           10,
-		InstructionsFile:   "RIG.md",
+		InstructionsFile:   "instructions.md",
 		MaxToolOutputChars: 3000,
 	}
 }

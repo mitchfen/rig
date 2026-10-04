@@ -8,10 +8,10 @@ import (
 	"os"
 	"strings"
 
-	"rig/agent"
-	"rig/client"
-	"rig/config"
-	"rig/tools"
+	"rig/src/agent"
+	"rig/src/client"
+	"rig/src/config"
+	"rig/src/tools"
 )
 
 func main() {

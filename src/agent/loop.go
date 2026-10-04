@@ -7,9 +7,9 @@ import (
 	"os"
 	"strings"
 
-	"rig/client"
-	"rig/config"
-	"rig/tools"
+	"rig/src/client"
+	"rig/src/config"
+	"rig/src/tools"
 )
 
 // ANSI color escape codes for clean terminal output

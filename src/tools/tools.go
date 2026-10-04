@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"rig/client"
+	"rig/src/client"
 )
 
 // Tool defines an executable agent capability.

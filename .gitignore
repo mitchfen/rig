@@ -1,5 +1,6 @@
-# Binaries
+# Binaries and Distribution
 /rig
+/output/
 *.exe
 *.exe~
 *.dll
