@@ -1,0 +1,27 @@
+# Binaries
+/rig
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Scratch or temporary files
+scratch/
+tmp/
